@@ -1,4 +1,5 @@
-import { IOrder, OrderModel } from '../Models/Models';
+import { OrderModel } from '../Models/Models';
+import { IOrder } from '../../types/index.ds';
 
 export interface IOrderRepository {
     create(order: IOrder): Promise<IOrder>;

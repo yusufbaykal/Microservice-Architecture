@@ -1,20 +1,5 @@
 import mongoose from 'mongoose';
-
-export enum OrderStatus {
-    PENDING = 'PENDING',
-    COMPLETED = 'COMPLETED',
-    CANCELLED = 'CANCELLED'
-}
-
-export interface IOrder extends Document{
-    _id?: mongoose.Types.ObjectId;
-    product_id: string,
-    status: OrderStatus,
-    quantity: number,
-    total: number,
-    createdAt: Date,
-    updatedAt: Date
-}
+import { IOrder, OrderStatus} from '../../types/index.ds';
 
 export interface IOrderWithoutId extends Omit<IOrder, '_id'> {}
 

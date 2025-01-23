@@ -1,82 +1,91 @@
+import { v4 as uuidv4 } from 'uuid';
 import { OrderRepository } from '../../domain/Repositories/Repositories';
-import { IOrder, OrderStatus} from '../../domain/Models/Models';
-import { OrderEventProducer } from '../event/Producer';
+import { RabbitMQConfig } from '../../config/rabbitmq.config';
+import { ProductCheckResult, OrderCreateRequest, IEventConsumer, IEventProducer, IOrder, OrderStatus } from '../../types/index.ds';
 
-export interface OrderCreateMessage {
-    product_id: string;
-    quantity: number;
-    total: number;
-    status: OrderStatus;
+
+interface SagaCallbacks {
+    resolve: (value: IOrder | PromiseLike<IOrder>) => void;
+    reject: (reason?: Error) => void;
 }
 
 export class OrderSaga {
-    static orderRepository: OrderRepository;
+    private pendingSagas = new Map<string, SagaCallbacks>();
 
-    static initialize(repository: OrderRepository) {
-        OrderSaga.orderRepository = repository;
+    constructor(
+        private orderRepository: OrderRepository,
+        private eventProducer: IEventProducer,
+        private eventConsumer: IEventConsumer
+    ) {
+        this.initializeConsumer();
     }
 
-    static async start(orderData: { product_id: string; quantity: number; total: number }) {
-        let order: IOrder | null = null;
-        try {
-            const orderCreateRequest = {
-                product_id: orderData.product_id,
-                quantity: orderData.quantity,
-                total: orderData.total,
-                status: OrderStatus.PENDING
-            };
+    private async initializeConsumer(): Promise<void> {
+        await this.eventConsumer.initialize();
+    }
 
-            order = await OrderSaga.orderRepository.create(orderCreateRequest);
-            console.log('Sipariş başarıyla oluşturuldu:', order);
+    async start(orderRequest: OrderCreateRequest): Promise<IOrder> {
+        const correlationId = uuidv4();
 
-            await OrderEventProducer.sendOrderForProductCheck(order);
+        return new Promise<IOrder>((resolve, reject) => {
+            this.pendingSagas.set(correlationId, { resolve, reject });
 
-            return new Promise((resolve, reject) => {
-                /*
-                OrderEvent.onProductCheckResult(async (result: { orderId: string, status: OrderStatus, message: string }) => {
-                    if (orderDocument && result.orderId === orderDocument._id.toString()) {
-                        if (result.status === OrderStatus.CANCELLED) {
-                            await OrderSaga.failOrder(orderDocument._id.toString(), result.message);
-                            reject(new Error(result.message));
-                        } else if (result.status === OrderStatus.COMPLETED) {
-                            await OrderSaga.completeOrder(orderDocument._id.toString());
-                            resolve(await OrderSaga.getOrder(orderDocument._id.toString()));
-                        }
-                    }
-                });
-                */
+            const timeout = setTimeout(
+                () => this.handleTimeout(correlationId),
+                RabbitMQConfig.retryPolicy.maxRetries * RabbitMQConfig.retryPolicy.retryDelay
+            );
 
-                const timeout = setTimeout(async () => {
-                    if (order) {
-                        if (order._id) {
-                            await OrderSaga.failOrder(order._id.toString());
-                        }
-                        reject(new Error('Ürün kontrolü zaman aşımına uğradı'));
-                    }
-                }, 10000);
-
-                process.on('SIGTERM', () => {
+            this.eventConsumer.registerCallback(correlationId, async (result) => {
+                try {
                     clearTimeout(timeout);
-                });
+                    await this.processResult(result);
+                } catch (error) {
+                    reject(error);
+                } finally {
+                    this.pendingSagas.delete(correlationId);
+                }
             });
 
-        } catch (error) {
-            if (order) {
-                await OrderSaga.failOrder(order._id!.toString());
+            this.eventProducer.sendProductCheckRequest({
+                ...orderRequest,
+                correlationId
+            }).catch(reject);
+        });
+    }
+
+    private async createOrder(result: ProductCheckResult): Promise<IOrder> {
+        return await this.orderRepository.create({
+            product_id: result.order_id,
+            quantity: result.quantity,
+            total: result.total,
+            status: OrderStatus.PENDING
+        });
+    }
+
+    private async processResult(result: ProductCheckResult): Promise<void> {
+        const saga = this.pendingSagas.get(result.correlationId);
+        if (!saga) return;
+
+        try {
+            if (result.status === 'success') {
+                const order = await this.createOrder(result);
+                await this.eventProducer.sendNotification(order);
+                saga.resolve(order);
+            } else {
+                saga.reject(new Error(result.error || 'Ürün kontrolü başarısız'));
             }
-            throw error;
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            saga.reject(new Error(errorMessage));
         }
     }
 
-    static async getOrder(order_id: string) {
-        return await OrderSaga.orderRepository.findById(order_id);
-    }
-
-    static async completeOrder(order_id: string) {
-        return await OrderSaga.orderRepository.updateStatus(order_id, OrderStatus.COMPLETED);
-    }
-
-    static async failOrder(order_id: string) {
-        return await OrderSaga.orderRepository.updateStatus(order_id, OrderStatus.CANCELLED);
+    private handleTimeout(correlationId: string): void {
+        const saga = this.pendingSagas.get(correlationId);
+        if (saga) {
+            saga.reject(new Error('İşlem zaman aşımına uğradı'));
+            this.pendingSagas.delete(correlationId);
+            this.eventConsumer.unregisterCallback(correlationId);
+        }
     }
 }

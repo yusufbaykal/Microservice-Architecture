@@ -1,17 +1,18 @@
 import { Channel, ConsumeMessage } from 'amqplib';
 import { RabbitMQConfig } from '../../config/rabbitmq.config';
 import { IEventConsumer,ProductCheckResult } from '../../types/index.ds';
-
+import { RabbitMQ } from '../../config/rabbitmq';
 export interface MessageHeaders {
     'retry-count': number;
 }
 
 export class OrderEventConsumer implements IEventConsumer {
-    private callbacks = new Map<string, (result: ProductCheckResult) => Promise<void>>(); // Instance-based
+    private callbacks = new Map<string, (result: ProductCheckResult) => Promise<void>>();
   
     constructor(
       private channel: Channel,
-      private config: typeof RabbitMQConfig = RabbitMQConfig
+      private config: typeof RabbitMQConfig = RabbitMQConfig,
+      public rabbitMQ: RabbitMQ
     ) {}
   
     async initialize(): Promise<void> {

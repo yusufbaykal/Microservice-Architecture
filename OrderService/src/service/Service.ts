@@ -1,18 +1,15 @@
-import { Request, Response } from 'express';
 import { OrderSaga } from '../application/saga/Saga';
+import { IOrder } from '../types/index.ds';
 
 export class OrderService {
-    constructor(
-      private saga: OrderSaga
-    ) {}
-    
-    async createOrder(req: Request, res: Response): Promise<void> {
-      try {
-        const order = await this.saga.start(req.body);
-        res.status(201).json(order);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Bilinmeyen hata';
-        res.status(400).json({ error: message });
-      }
+  constructor(private saga: OrderSaga) {}
+
+  async createOrder(data: IOrder): Promise<IOrder> {
+    try {
+      const order = await this.saga.start(data);
+      return order;
+    } catch (error) {
+      throw error instanceof Error ? error : new Error('Bilinmeyen hata');
     }
   }
+}

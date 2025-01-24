@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
     "start": "node dist/startup/server.js",
-    "dev": "nodemon --watch 'src/**/*.ts' --exec 'node --no-deprecation -r ts-node/register' src/startup/server.ts",
+    "dev": "nodemon --watch src/**/*.ts --exec ts-node src/startup/server.ts",
     "build": "tsc",
     "docker:start": "yarn build && yarn start"
   },

@@ -1,12 +1,13 @@
 import { Channel } from 'amqplib';
 import { IEventProducer, IOrder } from '../../types/index.ds';
 import { RabbitMQConfig } from '../../config/rabbitmq.config';
-
+import { RabbitMQ } from '../../config/rabbitmq';
 
 export class OrderEventProducer implements IEventProducer {
   constructor(
     private channel: Channel, 
-    private config: typeof RabbitMQConfig = RabbitMQConfig 
+    private config: typeof RabbitMQConfig = RabbitMQConfig,
+    public  rabbitMQ: RabbitMQ
   ) {}
 
   async sendProductCheckRequest(orderData: { 

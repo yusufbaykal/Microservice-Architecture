@@ -1,20 +1,21 @@
-import { IProduct, ProductModel } from '../Models/Models';
+import { ProductModel } from '../Models/Models';
+import { IProduct } from '../../types/index.ds';
 
 export interface IProductRepository {
-    create(product: IProduct): Promise<IProduct>;
-    update(product: IProduct): Promise<IProduct>;
-    delete(id: string): Promise<void>;
-    findById(id: string): Promise<IProduct>;
+    createProduct(product: IProduct): Promise<IProduct>;
+    updateProductStock(product: IProduct): Promise<IProduct>;
+    deleteProduct(id: string): Promise<void>;
+    getProductById(id: string): Promise<IProduct>;
     findAll(): Promise<IProduct[]>;
 }
 
 export class ProductRepository implements IProductRepository {
-    async create(product: IProduct): Promise<IProduct> {
+    async createProduct(product: IProduct): Promise<IProduct> {
         const createdProduct = await ProductModel.create(product);
         return createdProduct.toObject();
     }
 
-    async update(product: IProduct): Promise<IProduct> {
+    async updateProductStock(product: IProduct): Promise<IProduct> {
         const updatedProduct = await ProductModel.findByIdAndUpdate(product._id, product, { new: true });
         if (!updatedProduct) {
             throw new Error('Product not found');
@@ -22,14 +23,14 @@ export class ProductRepository implements IProductRepository {
         return updatedProduct.toObject();
     }
 
-    async delete(id: string): Promise<void> {
+    async deleteProduct(id: string): Promise<void> {
         const result = await ProductModel.findByIdAndDelete(id);
         if (!result) {
             throw new Error('Product not found');
         }
     }
 
-    async findById(id: string): Promise<IProduct> {
+    async getProductById(id: string): Promise<IProduct> {
         const product = await ProductModel.findById(id);
         if (!product) {
             throw new Error('Product not found');

@@ -1,15 +1,5 @@
-import mongoose, { Schema, model, Document } from 'mongoose';
-
-export interface IProduct extends Document {
-    name: string;
-    description: string;
-    price: number;
-    stock: number;
-    category_name: string;
-    image: string;
-    createdAt: Date;
-    updatedAt: Date;
-}
+import { Schema, model } from 'mongoose';
+import { IProduct } from '../../types/index.ds';
 
 const ProductSchema = new Schema({
     name: { type: String, required: true },

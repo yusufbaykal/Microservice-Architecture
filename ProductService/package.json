@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
     "start": "node dist/startup/server.js",
-    "dev": "nodemon --watch 'src/**/*.ts' --exec 'node --no-deprecation -r ts-node/register' src/startup/server.ts",
+    "dev": "nodemon --watch src/**/*.ts --exec ts-node src/startup/server.ts",
     "build": "tsc",
     "docker:start": "yarn build && yarn start"
   },
@@ -31,6 +31,7 @@
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.1",
     "prettier": "^3.4.2",
+    "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.7.2"
   }

@@ -20,18 +20,17 @@ export interface IProduct extends Document {
 
 export interface IEventConsumer {
     initialize(): Promise<void>;
-    responseCallback(correlationId: string, callback: (result: OrderCheckResponse) => Promise<void>): void;
-    unresponseCallback(correlationId: string): void;
-  }
+    registerCallback(correlationId: string, callback: (result: OrderCheckResponse) => Promise<void>): void;
+    unregisterCallback(correlationId: string): void;
+}
 
-
-  export interface IEventProducer {
+export interface IEventProducer {
     sendProductCheckResponse(data: { 
-      product_id: string; 
-      quantity: number;
-      correlationId: string;
-      status: string;
-      error?: string;
-    }):
-    Promise<void>;
-    }
+        product_id: string; 
+        quantity: number;
+        correlationId: string;
+        status: string;
+        error?: string;
+        total: number;
+    }): Promise<void>;
+}

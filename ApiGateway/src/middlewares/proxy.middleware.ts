@@ -7,10 +7,9 @@ export const productServiceProxy = createProxyMiddleware({
   target: config.services.product.url,
   changeOrigin: true,
   pathRewrite: {
-    '^/api/products': '/api/product/create'
+    '^/api/products': '/api/products' // Match Product Service route
   },
   onProxyReq: (proxyReq, req, res) => {
-
     if (req.body) {
       const bodyData = JSON.stringify(req.body);
       proxyReq.setHeader('Content-Type', 'application/json');
@@ -32,7 +31,7 @@ export const orderServiceProxy = createProxyMiddleware({
   target: config.services.order.url,
   changeOrigin: true,
   pathRewrite: {
-    '^/api/orders': '/api/orders/create'
+    '^/api/orders': '/api/orders' // Match Order Service route
   },
   onProxyReq: (proxyReq, req, res) => {
     if (req.body) {

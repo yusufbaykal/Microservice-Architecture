@@ -21,89 +21,72 @@ export class ProductSaga {
 
   private async initializeConsumer(): Promise<void> {
     await this.eventConsumer.initialize();
+    this.eventConsumer.registerCallback('productCheck', this.handleProductCheck.bind(this));
   }
 
-  async productCheck(orderResponse: OrderCheckResponse): Promise<IProduct> {
-    const correlationId = uuidv4();
-
-    return new Promise<IProduct>((resolve, reject) => {
-      this.pendingSagas.set(correlationId, { resolve, reject });
-
-      const timeout = setTimeout(
-        () => this.handleTimeout(correlationId),
-        RabbitMQConfig.retryPolicy.maxRetries * RabbitMQConfig.retryPolicy.retryDelay
-      );
-
-      this.eventConsumer.responseCallback(correlationId, async (result) => {
-        try {
-          clearTimeout(timeout);
-          await this.processResult(result);
-        } catch (error) {
-          reject(error);
-        } finally {
-          this.pendingSagas.delete(correlationId);
-        }
-      });
-
-      this.verifyAndAdjustStock(orderResponse, correlationId).catch(reject);
-    });
-  }
-
-  private async verifyAndAdjustStock(orderResponse: OrderCheckResponse, correlationId: string): Promise<void> {
+  private async handleProductCheck(orderRequest: OrderCheckResponse): Promise<void> {
+    console.log('Handling product check request:', orderRequest);
     try {
-      const product = await this.productRepository.getProductById(orderResponse.product_id);
+      const product = await this.productRepository.getProductById(orderRequest.product_id);
 
       if (!product) {
-        throw new Error('Ürün bulunamadı');
+        throw new Error('Product not found');
       }
 
-      if (product.stock < orderResponse.quantity) {
-        throw new Error('Stok yetersiz');
+      if (product.stock < orderRequest.quantity) {
+        throw new Error('Insufficient stock');
       }
 
-      // Stok düşüm işlemi
-      product.stock -= orderResponse.quantity;
+      product.stock -= orderRequest.quantity;
       await this.productRepository.updateProductStock(product);
 
-      // Başarılı işlem mesajı gönder
+      const quantity = typeof orderRequest.quantity === 'string' ? parseInt(orderRequest.quantity) : orderRequest.quantity;
+      
+      const total = quantity * product.price;
+
       await this.eventProducer.sendProductCheckResponse({
-        correlationId,
+        correlationId: orderRequest.correlationId,
         status: 'success',
-        product_id: orderResponse.product_id,
-        quantity: orderResponse.quantity,
+        product_id: orderRequest.product_id,
+        quantity: quantity,
+        total: total
       });
     } catch (error) {
+      console.error('Error in handleProductCheck:', error);
       await this.eventProducer.sendProductCheckResponse({
-        correlationId,
+        correlationId: orderRequest.correlationId,
         status: 'error',
-        product_id: orderResponse.product_id,
-        quantity: orderResponse.quantity,
+        product_id: orderRequest.product_id,
+        quantity: orderRequest.quantity,
+        total: 0,
         error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   }
 
-  private async processResult(result: any): Promise<void> {
-    const saga = this.pendingSagas.get(result.correlationId);
-    if (!saga) return;
-
+  async productCheck(orderResponse: OrderCheckResponse): Promise<IProduct> {
     try {
-      if (result.status === 'success') {
-        saga.resolve(result);
-      } else {
-        saga.reject(new Error(result.error || 'Stok kontrolü başarısız'));
-      }
+      console.log('Starting product check for:', orderResponse);
+      const product = await this.verifyAndAdjustStock(orderResponse);
+      return product;
     } catch (error) {
-      saga.reject(error instanceof Error ? error : new Error('Unknown error'));
+      console.error('Product check failed:', error);
+      throw error;
     }
   }
 
-  private handleTimeout(correlationId: string): void {
-    const saga = this.pendingSagas.get(correlationId);
-    if (saga) {
-      saga.reject(new Error('İşlem zaman aşımına uğradı'));
-      this.pendingSagas.delete(correlationId);
-      this.eventConsumer.unresponseCallback(correlationId);
+  private async verifyAndAdjustStock(orderResponse: OrderCheckResponse): Promise<IProduct> {
+    const product = await this.productRepository.getProductById(orderResponse.product_id);
+
+    if (!product) {
+      throw new Error('Product not found');
     }
+
+    if (product.stock < orderResponse.quantity) {
+      throw new Error('Insufficient stock');
+    }
+
+    product.stock -= orderResponse.quantity;
+    return await this.productRepository.updateProductStock(product);
   }
 }

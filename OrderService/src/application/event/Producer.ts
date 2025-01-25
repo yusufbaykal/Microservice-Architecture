@@ -14,6 +14,7 @@ export class OrderEventProducer implements IEventProducer {
     product_id: string; 
     quantity: number;
     correlationId: string;
+    total: number;
   }) {
     try {
       await this.channel.publish(

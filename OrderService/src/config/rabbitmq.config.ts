@@ -55,7 +55,7 @@ export const RabbitMQConfig = {
   
       await channel.bindQueue(
         RabbitMQConfig.queues.orderResponse,
-        RabbitMQConfig.exchanges.product,
+        RabbitMQConfig.exchanges.order,
         RabbitMQConfig.routingKeys.productCheckResult
       );
   

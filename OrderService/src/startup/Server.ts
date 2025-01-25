@@ -6,6 +6,8 @@ import { createOrderRouter } from '../routes/Routes';
 import Database from '../config/database';
 import { RabbitMQConfig } from '../config/rabbitmq.config';
 import { RabbitMQ } from '../config/rabbitmq';
+import { initializeRabbitMQ } from '../config/rabbitmq.config';
+
 
 dotenv.config();
 
@@ -31,6 +33,8 @@ async function initializeDependencies(): Promise<Dependencies> {
     const rabbitMQ = RabbitMQ.getInstance();
     await rabbitMQ.connect();
     const channel = rabbitMQ.getChannel();
+
+    await initializeRabbitMQ(channel);
 
     return {
       database,

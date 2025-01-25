@@ -2,14 +2,17 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import Database from '../config/database';
-import { RabbitMQConfig } from '../config/rabbitmq';
+import { RabbitMQConfig as RabbitMQConnection } from '../config/rabbitmq'; // Rename for clarity
 import { ProductRepository } from '../domain/Repositories/Repositories';
 import { ProductEventProducer } from '../application/Event/Producer';
 import { ProductEventConsumer } from '../application/Event/Consumer';
 import { ProductSaga } from '../application/Saga/Saga';
 import { ProductService } from '../service/Service';
+import { initializeRabbitMQ } from '../config/rabbitmq.config';
+import { createProductRouter } from '../routes/Routes';
 import { ProductController } from '../controller/Controller';
-import { Router } from 'express';
+import { RabbitMQConfig } from '../config/rabbitmq.config';
+
 
 dotenv.config();
 
@@ -18,34 +21,30 @@ const MONGODB_URI = process.env.MONGODB_URI
 
 const app = express();
 
-function createRouter(productService: ProductService): Router {
-    const router = Router();
-    const productController = new ProductController(productService);
-    router.post('/products', (req, res) => productController.createProduct(req, res));
-    return router;
-}
-
 async function initializeDependencies() {
     try {
         const database = Database.getInstance();
         await database.connect({ MONGODB_URI: MONGODB_URI as string });
 
-        const rabbitMQ = RabbitMQConfig.getInstance();
+        const rabbitMQ = RabbitMQConnection.getInstance();
         await rabbitMQ.connect();
         const channel = rabbitMQ.getChannel();
+        
+        await initializeRabbitMQ(channel);
 
         const productRepository = new ProductRepository();
         const eventProducer = new ProductEventProducer(channel);
-        const eventConsumer = new ProductEventConsumer(channel);
+        const eventConsumer = new ProductEventConsumer(channel, RabbitMQConfig);
         await eventConsumer.initialize();
 
         const productSaga = new ProductSaga(productRepository, eventProducer, eventConsumer);
         const productService = new ProductService(productRepository);
+        const productController = new ProductController(productService);
 
         return {
             database,
             rabbitMQ,
-            productService
+            productController,
         };
     } catch (error) {
         console.error('Failed to initialize dependencies:', error);
@@ -56,8 +55,8 @@ async function initializeDependencies() {
 async function startServer() {
     let dependencies: {
         database: Database,
-        rabbitMQ: RabbitMQConfig,
-        productService: ProductService
+        rabbitMQ: RabbitMQConnection,
+        productController: ProductController
     } | undefined;
 
     try {
@@ -76,7 +75,7 @@ async function startServer() {
             });
         });
 
-        app.use('/api/product', createRouter(dependencies.productService));
+        app.use('/api/products', createProductRouter(dependencies.productController));
 
         const server = app.listen(PORT, () => {
             console.log(`Product Service is running on port ${PORT}`);

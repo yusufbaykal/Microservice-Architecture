@@ -2,19 +2,18 @@ import { Channel } from 'amqplib';
 
 export const RabbitMQConfig = {
   exchanges: {
-    order: 'order-exchange',
     product: 'product-exchange',
+    order: 'order-exchange',
     dlx: 'dlx-exchange'
   },
   queues: {
+    orderResponse: 'order-response-queue', 
     productCheck: 'product-check-queue',
-    orderResponse: 'order-response-queue',
     dlq: 'dead-letter-queue'
   },
   routingKeys: {
     productCheck: 'order.product.check',
-    productCheckResult: 'product.check.result',
-    orderResponse: 'order.response'
+    productCheckResult: 'product.check.result'
   },
   retryPolicy: {
     maxRetries: 3,

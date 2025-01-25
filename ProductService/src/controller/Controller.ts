@@ -7,7 +7,7 @@ export class ProductController {
   async createProduct(req: Request, res: Response): Promise<void> {
     try {
       const product = await this.productService.createProduct(req.body);
-      res.status(200).json(product);
+      res.status(200).json('Product Created');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Bilinmeyen hata';
       res.status(400).json({ error: message });

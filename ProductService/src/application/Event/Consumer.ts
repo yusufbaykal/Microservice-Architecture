@@ -7,14 +7,15 @@ export interface MessageHeaders {
 }
 
 export class ProductEventConsumer implements IEventConsumer {
-  private callbacks = new Map<string, (result: OrderCheckResponse) => Promise<void>>();
+  private callbacks = new Map<string, (message: any) => Promise<void>>();
 
   constructor(
     private channel: Channel,
-    private config: typeof RabbitMQConfig = RabbitMQConfig
+    private config: typeof RabbitMQConfig
   ) {}
 
   async initialize(): Promise<void> {
+    console.log('Initializing consumer for queue:', this.config.queues.productCheck);
     await this.channel.consume(
       this.config.queues.productCheck,
       this.handleMessage.bind(this)
@@ -25,35 +26,38 @@ export class ProductEventConsumer implements IEventConsumer {
     if (!msg) return;
 
     try {
-      const result = JSON.parse(msg.content.toString()) as OrderCheckResponse;
-      const headers = msg.properties.headers as MessageHeaders;
-      const retryCount = headers?.['retry-count'] || 0;
+      const content = JSON.parse(msg.content.toString());
+      console.log('Received message:', content);
 
-      if (retryCount >= this.config.retryPolicy.maxRetries) {
-        console.error('Max retry count reached:', result.correlationId);
-        this.channel.nack(msg, false, false);
-        return;
-      }
-
-      const callback = this.callbacks.get(result.correlationId);
+      const callback = this.callbacks.get('productCheck');
       if (callback) {
-        await callback(result);
+        await callback(content);
         this.channel.ack(msg);
       } else {
-        console.warn('Callback not found:', result.correlationId);
-        this.channel.nack(msg, false, true);
+        console.warn('Callback not found for productCheck');
+        this.channel.nack(msg, false, false);
       }
     } catch (error) {
       console.error('Message processing error:', error);
-      this.channel.nack(msg, false, true);
+      const headers = msg.properties.headers as MessageHeaders;
+      const retryCount = (headers?.['retry-count'] || 0) + 1;
+
+      if (retryCount <= this.config.retryPolicy.maxRetries) {
+        this.channel.nack(msg, false, true);
+      } else {
+        console.error('Max retry count reached, sending to DLQ');
+        this.channel.nack(msg, false, false);
+      }
     }
   }
 
-  responseCallback(correlationId: string, callback: (result: OrderCheckResponse) => Promise<void>): void {
-    this.callbacks.set(correlationId, callback);
+  registerCallback(key: string, callback: (message: any) => Promise<void>): void {
+    console.log('Registering callback for key:', key);
+    this.callbacks.set(key, callback);
   }
 
-  unresponseCallback(correlationId: string): void {
-    this.callbacks.delete(correlationId);
+  unregisterCallback(key: string): void {
+    console.log('Unregistering callback for key:', key);
+    this.callbacks.delete(key);
   }
 }

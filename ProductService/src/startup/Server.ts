@@ -13,12 +13,8 @@ import { Router } from 'express';
 
 dotenv.config();
 
-const PORT = process.env.PORT as string;
-const MONGODB_URI = process.env.MONGODB_URI as string;
-
-if (!PORT || !MONGODB_URI) {
-  throw new Error('Environment variables PORT and MONGODB_URI must be set');
-}
+const PORT = process.env.PORT
+const MONGODB_URI = process.env.MONGODB_URI
 
 const app = express();
 
@@ -32,7 +28,7 @@ function createRouter(productService: ProductService): Router {
 async function initializeDependencies() {
     try {
         const database = Database.getInstance();
-        await database.connect({ MONGODB_URI });
+        await database.connect({ MONGODB_URI: MONGODB_URI as string });
 
         const rabbitMQ = RabbitMQConfig.getInstance();
         await rabbitMQ.connect();

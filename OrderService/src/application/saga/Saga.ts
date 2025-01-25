@@ -72,7 +72,7 @@ export class OrderSaga {
                 await this.eventProducer.sendNotification(order);
                 saga.resolve(order);
             } else {
-                saga.reject(new Error(result.error || 'Ürün kontrolü başarısız'));
+                saga.reject(new Error(result.error || 'Failed product check'));
             }
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -83,7 +83,7 @@ export class OrderSaga {
     private handleTimeout(correlationId: string): void {
         const saga = this.pendingSagas.get(correlationId);
         if (saga) {
-            saga.reject(new Error('İşlem zaman aşımına uğradı'));
+            saga.reject(new Error('Transaction timed out'));
             this.pendingSagas.delete(correlationId);
             this.eventConsumer.unregisterCallback(correlationId);
         }

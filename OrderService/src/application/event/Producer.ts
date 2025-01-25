@@ -27,7 +27,7 @@ export class OrderEventProducer implements IEventProducer {
         }
       );
     } catch (error) {
-      console.error('Ürün kontrol isteği gönderilemedi:', error);
+      console.error('Failed to send product control request:', error);
       throw error;
     }
   }
@@ -39,12 +39,12 @@ export class OrderEventProducer implements IEventProducer {
         this.config.routingKeys.notification,
         Buffer.from(JSON.stringify({
           order_id: order._id,
-          message: 'Yeni sipariş oluşturuldu'
+          message: 'New order created'
         })),
         { persistent: true }
       );
     } catch (error) {
-      console.error('Bildirim gönderilemedi:', error);
+      console.error('Failed to send notification:', error);
       throw error;
     }
   }

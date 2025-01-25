@@ -31,7 +31,7 @@ export class OrderEventConsumer implements IEventConsumer {
         const retryCount = headers?.['retry-count'] || 0;
   
         if (retryCount >= this.config.retryPolicy.maxRetries) {
-          console.error('Maksimum deneme sayısına ulaşıldı:', result.correlationId);
+          console.error('Maximum number of trials reached:', result.correlationId);
           this.channel.nack(msg, false, false);
           return;
         }
@@ -41,11 +41,11 @@ export class OrderEventConsumer implements IEventConsumer {
           await callback(result);
           this.channel.ack(msg);
         } else {
-          console.warn('İlgili callback bulunamadı:', result.correlationId);
+          console.warn('Related callback not found:', result.correlationId);
           this.channel.nack(msg, false, true);
         }
       } catch (error) {
-        console.error('Mesaj işleme hatası:', error);
+        console.error('Message processing error:', error);
         this.channel.nack(msg, false, true);
       }
     }

@@ -1,17 +1,17 @@
 import amqp, { Connection, Channel } from 'amqplib';
 
-export class RabbitMQConfig {
-    private static instance: RabbitMQConfig;
+export class RabbitMQ {
+    private static instance: RabbitMQ;
     private connection: Connection | null = null;
     private channel: Channel | null = null;
 
     private constructor() {}
 
-    static getInstance(): RabbitMQConfig {
-        if (!RabbitMQConfig.instance) {
-            RabbitMQConfig.instance = new RabbitMQConfig();
+    static getInstance(): RabbitMQ {
+        if (!RabbitMQ.instance) {
+            RabbitMQ.instance = new RabbitMQ();
         }
-        return RabbitMQConfig.instance;
+        return RabbitMQ.instance;
     }
 
     private async delay(ms: number): Promise<void> {

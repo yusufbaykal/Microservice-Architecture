@@ -3,12 +3,10 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import swaggerUi from 'swagger-ui-express';
 import { config } from './config/config';
+import { swaggerDocument } from './config/swagger.config';
 import routes from './routes';
-
-interface Dependencies {
-    database: typeof mongoose;
-}
 
 function createApp() {
     const app = express();
@@ -23,6 +21,10 @@ function createApp() {
         max: config.rateLimiting.max,
     });
     app.use(limiter);
+
+    // Swagger UI
+    app.use('/api-docs', swaggerUi.serve);
+    app.get('/api-docs', swaggerUi.setup(swaggerDocument));
 
     app.use('/', routes);
 
@@ -50,29 +52,18 @@ function createApp() {
     return app;
 }
 
-async function initializeDependencies(): Promise<Dependencies> {
+async function startServer() {
     try {
         await mongoose.connect(config.mongodb.uri);
         console.log('MongoDB connection established');
-        return { database: mongoose };
-    } catch (error) {
-        console.error('Failed to initialize dependencies:', error);
-        throw error;
-    }
-}
 
-async function startServer() {
-    try {
-        await initializeDependencies();
         const app = createApp();
-
         const server = app.listen(config.port, () => {
             console.log(`API Gateway is running on port ${config.port}`);
         });
 
         const shutdown = async (signal: string) => {
             console.log(`${signal} received. Starting graceful shutdown...`);
-            
             server.close(async () => {
                 try {
                     await mongoose.disconnect();

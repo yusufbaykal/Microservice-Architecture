@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { config } from '../config/config';
-import { User, IUser } from '../models/User';
+import { User } from '../models/User';
 
 interface TokenPayload {
   userId: string;
@@ -39,7 +39,7 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
       id: user._id.toString(), 
       role: user.role 
     };
-    next();
+    return next();
   } catch (error) {
     return res.status(403).json({ message: 'Invalid token' });
   }
@@ -50,6 +50,6 @@ export const authorizeRole = (roles: string[]) => {
     if (!req.user || !roles.includes(req.user.role)) {
       return res.status(403).json({ message: 'You are not authorized for this operation' });
     }
-    next();
+    return next();
   };
 }; 

@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { config } from '../config/config';
 
@@ -7,9 +7,9 @@ export const productServiceProxy = createProxyMiddleware({
   target: config.services.product.url,
   changeOrigin: true,
   pathRewrite: {
-    '^/api/products': '/api/products' // Match Product Service route
+    '^/api/products': '/api/products'
   },
-  onProxyReq: (proxyReq, req, res) => {
+  onProxyReq: (proxyReq, req) => {
     if (req.body) {
       const bodyData = JSON.stringify(req.body);
       proxyReq.setHeader('Content-Type', 'application/json');
@@ -17,7 +17,7 @@ export const productServiceProxy = createProxyMiddleware({
       proxyReq.write(bodyData);
     }
   },
-  onError: (err: Error, req: Request, res: Response) => {
+  onError: (err: Error, _req: Request, res: Response) => {
     console.error('Product Service Error:', err.message);
     res.status(500).json({ 
       message: 'Product Service is currently not available', 
@@ -31,9 +31,9 @@ export const orderServiceProxy = createProxyMiddleware({
   target: config.services.order.url,
   changeOrigin: true,
   pathRewrite: {
-    '^/api/orders': '/api/orders' // Match Order Service route
+    '^/api/orders': '/api/orders'
   },
-  onProxyReq: (proxyReq, req, res) => {
+  onProxyReq: (proxyReq, req) => {
     if (req.body) {
       const bodyData = JSON.stringify(req.body);
       proxyReq.setHeader('Content-Type', 'application/json');
@@ -41,7 +41,7 @@ export const orderServiceProxy = createProxyMiddleware({
       proxyReq.write(bodyData);
     }
   },
-  onError: (err: Error, req: Request, res: Response) => {
+  onError: (err: Error, _req: Request, res: Response) => {
     console.error('Order Service Error:', err.message);
     res.status(500).json({ 
       message: 'Order Service is currently not available', 
@@ -57,7 +57,7 @@ export const notificationServiceProxy = createProxyMiddleware({
   pathRewrite: {
     '^/api/notifications': '/notifications'
   },
-  onError: (err: Error, req: Request, res: Response) => {
+  onError: (err: Error, _req: Request, res: Response) => {
     console.error('Notification Service Error:', err.message);
     res.status(500).json({ 
       message: 'Notification Service is currently not available', 

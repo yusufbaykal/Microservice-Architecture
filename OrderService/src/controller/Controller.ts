@@ -7,7 +7,7 @@ export class OrderController {
   async createOrder(req: Request, res: Response): Promise<void> {
     try {
       await this.orderService.createOrder(req.body);
-      res.status(201).json('Order Created');
+      res.status(201).json({ message: 'Order Created'});
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Bilinmeyen hata';
       res.status(400).json({ error: message });

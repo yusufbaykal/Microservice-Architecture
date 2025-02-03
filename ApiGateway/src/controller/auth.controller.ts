@@ -16,7 +16,7 @@ export const register = async (req: Request, res: Response) => {
 
     await user.save();
 
-    res.status(201).json({
+    return res.status(201).json({
       message: 'User successfully created',
       user: {
         id: user._id,
@@ -26,7 +26,7 @@ export const register = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ message: 'Server Error', error });
+    return res.status(500).json({ message: 'Server Error', error });
   }
 };
 
@@ -50,7 +50,7 @@ export const login = async (req: Request, res: Response) => {
       { expiresIn: '24h' }
     );
 
-    res.json({
+    return res.json({
       message: 'Successful entry',
       token,
       user: {
@@ -61,6 +61,6 @@ export const login = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ message: 'Serve Error', error });
+    return res.status(500).json({ message: 'Serve Error', error });
   }
 }; 

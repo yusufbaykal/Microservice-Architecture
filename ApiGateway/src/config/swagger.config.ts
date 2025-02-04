@@ -4,7 +4,7 @@ const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'E-Ticaret Basic Mikroservis API',
+      title: 'E-Commerce Mikroservice API',
       version: '1.0.0',
       description: 'E-Ticaret uygulaması için mikroservis tabanlı REST API dokümantasyonu',
     },
@@ -35,9 +35,9 @@ export const specs = swaggerJsdoc(options);
 export const swaggerDocument = {
   openapi: '3.0.0',
   info: {
-    title: 'E-Ticaret Basic Mikroservis API',
+    title: 'E-Commerce Mikroservice API',
     version: '1.0.0',
-    description: 'E-Ticaret uygulaması için mikroservis tabanlı REST API dokümantasyonu',
+    description: 'Microservice-based REST API documentation for e-commerce application',
   },
   servers: [
     {
@@ -61,7 +61,7 @@ export const swaggerDocument = {
     '/auth/register': {
       post: {
         tags: ['Auth'],
-        summary: 'Yeni kullanıcı kaydı',
+        summary: 'New User Register',
         requestBody: {
           required: true,
           content: {
@@ -76,7 +76,7 @@ export const swaggerDocument = {
                   role: { 
                     type: 'string',
                     enum: ['user', 'admin'],
-                    default: 'user'
+                    default: 'admin'
                   }
                 }
               }
@@ -84,15 +84,15 @@ export const swaggerDocument = {
           }
         },
         responses: {
-          '201': { description: 'Kullanıcı başarıyla oluşturuldu' },
-          '400': { description: 'Geçersiz istek' }
+          '201': { description: 'User created successfully' },
+          '400': { description: 'Invalid request' }
         }
       }
     },
     '/auth/login': {
       post: {
         tags: ['Auth'],
-        summary: 'Kullanıcı girişi',
+        summary: 'Login',
         requestBody: {
           required: true,
           content: {
@@ -109,23 +109,15 @@ export const swaggerDocument = {
           }
         },
         responses: {
-          '200': { description: 'Başarılı giriş' },
-          '401': { description: 'Geçersiz kimlik bilgileri' }
+          '200': { description: 'Successful' },
+          '401': { description: 'Invalid login credentials' }
         }
       }
     },
     '/api/products': {
-      get: {
-        tags: ['Products'],
-        summary: 'Tüm ürünleri listele',
-        security: [{ bearerAuth: [] }],
-        responses: {
-          '200': { description: 'Ürün listesi başarıyla getirildi' }
-        }
-      },
       post: {
         tags: ['Products'],
-        summary: 'Yeni ürün ekle',
+        summary: 'Add new product',
         security: [{ bearerAuth: [] }],
         requestBody: {
           required: true,
@@ -147,14 +139,16 @@ export const swaggerDocument = {
           }
         },
         responses: {
-          '201': { description: 'Ürün başarıyla oluşturuldu' }
+          '201': { description: 'Product created successfully' },
+          '400': { description: 'Invalid request' }
+
         }
       }
     },
     '/api/orders/create': {
       post: {
         tags: ['Orders'],
-        summary: 'Yeni sipariş oluştur',
+        summary: 'Create new order',
         security: [{ bearerAuth: [] }],
         requestBody: {
           required: true,
@@ -172,18 +166,8 @@ export const swaggerDocument = {
           }
         },
         responses: {
-          '201': { description: 'Sipariş başarıyla oluşturuldu' },
-          '400': { description: 'Geçersiz istek' }
-        }
-      }
-    },
-    '/api/notifications': {
-      get: {
-        tags: ['Notifications'],
-        summary: 'Bildirimleri listele',
-        security: [{ bearerAuth: [] }],
-        responses: {
-          '200': { description: 'Bildirimler başarıyla getirildi' }
+          '201': { description: 'Order created successfully' },
+          '400': { description: 'Invalid request' }
         }
       }
     }
